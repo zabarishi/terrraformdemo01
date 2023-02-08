@@ -19,5 +19,4 @@ jobs:
           reviewer: zabarishi        
           old_string: "<!-- Add your description here -->"
           new_string: "** Automatic pull request**"
-          get_diff: true       
-          allow_no_diff: false
+          
