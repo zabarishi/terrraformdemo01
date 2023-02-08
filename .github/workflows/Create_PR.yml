@@ -1,0 +1,22 @@
+name: Run the Action on each commit
+on:
+  push:
+    branches: main
+jobs:
+  action-pull-request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Run the Action
+        uses: devops-infra/action-pull-request@v0.5.3
+        with:
+          github_token: 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
+          source_branch: release_main
+          target_branch: main
+          title: My pull request
+          body: "**Automated pull request**"
+          reviewer: zabarishi        
+          old_string: "<!-- Add your description here -->"
+          new_string: "** Automatic pull request**"
+          
