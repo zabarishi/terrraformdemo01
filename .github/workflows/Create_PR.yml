@@ -12,8 +12,8 @@ jobs:
         uses: devops-infra/action-pull-request@v0.5.3
         with:
           github_token: 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
-          source_branch: main
-          target_branch: release_main
+          source_branch: release_main
+          target_branch: main
           title: My pull request
           body: "**Automated pull request**"
           reviewer: zabarishi        
