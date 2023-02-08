@@ -3,11 +3,11 @@ provider "azurerm" {
   features { }  
 }
 resource "azurerm_resource_group" "rg" {
-  name     = var.resourceGroupName
+  name     = var.resourceGroupName01
   location = var.location
 }
 
 resource "azurerm_resource_group" "rg" {
-  name     = var.resourceGroupName
+  name     = var.resourceGroupName01
   location = var.location
 }
