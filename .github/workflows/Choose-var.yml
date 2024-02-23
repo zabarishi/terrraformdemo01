@@ -19,4 +19,4 @@ jobs:
           echo "variable2_value=Some value for variable 2" >> $GITHUB_ENV
       
       - name: Print chosen variable
-        run: echo "Chosen variable value is ${{ env[github.event.inputs.variable_choice] }}"
+        run: echo "Chosen variable value is ${{ env[github.event.inputs.variable_choice + '_value'] }}"
