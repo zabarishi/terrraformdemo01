@@ -1,16 +1,15 @@
-name: Choose Value
+name: Print Value
 
 on:
   workflow_dispatch:
+    inputs:
+      value:
+        description: 'Value to print'
+        required: true
 
 jobs:
-  choose_value:
+  print:
     runs-on: ubuntu-latest
     steps:
-      - name: Choose value
-        id: choose_value
-        run: |
-          echo "::set-output name=value::$(echo -e "Option 1\nOption 2\nOption 3" | fzf)"
-      
-      - name: Print chosen value
-        run: echo "Chosen value is ${{ steps.choose_value.outputs.value }}"
+      - name: Print the provided value
+        run: echo "The provided value is ${{ github.event.inputs.value }}"
