@@ -1,0 +1,22 @@
+name: Choose Variable
+
+on:
+  workflow_dispatch:
+    inputs:
+      variable_choice:
+        description: 'Choose a variable to print'
+        required: true
+        default: 'variable1'
+
+jobs:
+  choose_variable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set variables
+        id: set_variables
+        run: |
+          echo "variable1_value=Some value for variable 1" >> $GITHUB_ENV
+          echo "variable2_value=Some value for variable 2" >> $GITHUB_ENV
+      
+      - name: Print chosen variable
+        run: echo "Chosen variable value is ${{ env[github.event.inputs.variable_choice] }}"
