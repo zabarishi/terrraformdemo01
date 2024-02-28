@@ -6,6 +6,7 @@ on:
       value:
         description: 'Select a value to print'
         required: true
+        default: 'Dev' # Set 'Dev' as the default value
         options: # Define the options to choose from
           - Dev
           - stg
