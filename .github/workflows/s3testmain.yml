@@ -1,0 +1,202 @@
+
+name: Flutter App Deployment-V1.0
+
+on:
+  workflow_dispatch:
+    inputs:
+      value:
+        description: 'Select S3'
+        required: true
+        default: 'stage.asco.meetings.mobile' # Set 'stage' as the default value
+        options: # Define the options to choose from
+          - asco.meetings.mobile
+          - stage.asco.meetings.mobile
+
+jobs:
+  build_android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '12.x'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.16.5"
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build release app bundle
+        run: flutter build appbundle --release
+
+      - name: Sign App Bundle
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: build/app/outputs/bundle/release/
+          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Upload Signed App Bundle
+        uses: actions/upload-artifact@v2
+        with:
+          name: ASCO-Meetings-Android
+          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          # Enable this code only in main branch to deploy the build to playstore
+#      - name: Upload to Play Store (Internal Testing)
+#        uses: r0adkll/upload-google-play@v1.0.18
+#        with:
+#          serviceAccountJsonPlainText: ${{ secrets.ANDROID_SERVICE_ACCOUNT_JSON }}
+#          packageName: com.asco.app.asco_central_mobile
+#          releaseFiles: ${{ steps.sign_app.outputs.signedReleaseFile }}
+#          mappingFile: ./build/app/outputs/mapping/release/mapping.txt
+#          track: internal
+#          status: draft
+
+  build_ios:
+    runs-on: macos-13
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '12.x'
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.16.5"
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Import certificates (iOS)
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          # import certificate and provisioning profile from secrets
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+          # create a temporary keychain
+          security create-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_PATH
+          # import certificate to keychain
+          security import $CERTIFICATE_PATH -P $P12_PASSWORD -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychains -d user -s $KEYCHAIN_PATH
+          # apply provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+      - name: Build iOS application archive
+        run: flutter build ipa --export-options-plist=ios/exportOptions.plist
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ASCO-Meetings-iOS
+          path: build/ios/ipa/*.ipa
+          # Enable this code only in main branch to deploy the build to testflight
+#      - name: Decode App Store Connect private key file and save it
+#        env:
+#          API_KEY_BASE64: ${{ secrets.APPLE_STORE_CONNECT_KEY_BASE64 }}
+#          API_KEY: ${{ secrets.APPLE_STORE_CONNECT_KEY_ID }}
+#        run: |
+#          mkdir -p ~/private_keys
+#          ls ~/private_keys
+#          echo -n "$API_KEY_BASE64" | base64 --decode -o ~/private_keys/AuthKey_$API_KEY.p8
+#          echo "After saving: "
+#          ls ~/private_keys
+#
+#      - name: Upload to App Store Connect
+#        env:
+#          ISSUER_ID: ${{ secrets.APPLE_STORE_CONNECT_ISSUER_ID }}
+#          API_KEY: ${{ secrets.APPLE_STORE_CONNECT_KEY_ID }}
+#        run: |
+#          echo "Before uploading: "
+#          ls ~/private_keys
+#          xcrun altool --upload-app -f build/ios/ipa/*.ipa -t ios --apiKey $API_KEY --apiIssuer "$ISSUER_ID"
+#          ls ~/private_keys
+
+  build_web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '12.x'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.16.5"
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web
+        run: flutter build web
+
+      - name: Archive web build
+        uses: actions/upload-artifact@v2
+        with:
+          name: ASCO-Meetings-POC-web-build
+          path: build/web
+
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1  
+
+      - name: Upload to S3
+        run: aws s3 sync build/web s3://stage.asco.meetings.mobile/
+
+  send_notification:
+    runs-on: ubuntu-latest
+    needs: [build_android, build_ios, build_web]
+    steps:
+      - name: Check job status
+        id: check_status
+        run: echo "::set-output name=failed::${{ job.status != 'success' && needs.build_android.result != 'success' && needs.build_ios.result != 'success' && needs.build_web.result != 'success' }}"
+      - name: Send error notification
+        if: always() && needs.send_notification.outputs.failed == 'true'
+        run: |
+          echo "The Flutter APP build has failed. Check the workflow run for more details:" \
+          "\nWorkflow Run: ${{ github.run_number }}" \
+          "\nJob URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+          "\nError message: ${{ job.status }}" \
+          | mail -s "Build Failure - ${{ github.repository }}" -a "From: ${{ secrets.SENDER_EMAIL }}" ${{ secrets.EMAIL_RECIPIENTS }}
+      - name: Always run
+        if: always()
+        run: echo "This always runs"
