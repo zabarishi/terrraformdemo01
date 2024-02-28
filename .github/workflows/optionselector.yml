@@ -4,12 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       value:
-        description: 'Value to print'
+        description: 'Select a value to print'
         required: true
+        options: # Define the options to choose from
+          - Dev
+          - stg
 
 jobs:
   print:
     runs-on: ubuntu-latest
     steps:
       - name: Print the provided value
-        run: echo "The provided value is ${{ github.event.inputs.value }}"
+        run: echo "The selected value is ${{ github.event.inputs.value }}"
