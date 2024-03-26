@@ -2,14 +2,7 @@ name: Print Value
 
 on:
   workflow_dispatch:
-    inputs:
-      value:
-        description: 'Select a value to print'
-        required: true
-        default: 'asco.meetings.mobile' # Set 'Dev' as the default value
-        options: # Define the options to choose from
-          - asco.meetings.mobile
-          - stage.asco.meetings.mobile
+
 
 jobs:
   print:
