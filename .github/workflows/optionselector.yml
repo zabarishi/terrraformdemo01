@@ -11,4 +11,3 @@ jobs:
     steps:
       - name: Print the provided value
         run: echo "The selected env value is s3://${{ env.DEV_S3_VALUE }}/"
-
