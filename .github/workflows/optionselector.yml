@@ -10,4 +10,5 @@ jobs:
       name: dev
     steps:
       - name: Print the provided value
-        run: echo "The selected env value is s3://${vars.DEVV_S3_VALUE}/"
+        run: echo "The selected env value is ${{ vars.DEVV_S3_VALUE }}"
+
