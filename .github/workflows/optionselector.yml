@@ -14,8 +14,6 @@ jobs:
         
   print1:
     runs-on: ubuntu-latest
-    environment:
-      name: dev
     steps:
       - name: Print the provided value
         run: echo "The selected env value is ${{ vars.DEVV_S3_VALUE }}"      
